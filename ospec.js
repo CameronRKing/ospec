@@ -7,7 +7,7 @@ Ospec is made of four parts:
 3. an assertion API that populates a results array
 4. a reporter which presents the results
 
-The tepmoral sequence at run time is 1 then (2 and 3), then 4
+The temporal sequence at run time is 1 then (2 and 3), then 4
 
 The various sections (and sub-sections thereof) share information through stack-managed globals
 which are enumerated in the "Setup" section below.
@@ -147,6 +147,9 @@ else window.o = m()
 			globalContext.children[unique(subject)] = new Task(predicate, ensureStackTrace(new Error), null)
 		}
 	}
+
+	/* minor addition: exposing spec tree to consumers */
+	o.rootSpec = rootSpec;
 
 	o.before = hook("before")
 	o.after = hook("after")
