@@ -477,21 +477,17 @@ else window.o = m()
 	}
 
 	function plainAssertion(verb, compare) {
-		return function(self, value) {
+		return function(self, value, userMsg) {
 			var success = compare(self.value, value)
 			var message = serialize(self.value) + "\n  " + verb + "\n" + serialize(value)
 			if (success) succeed(self.i, message, null)
-			else throw new Error(message); // fail(self.i, message, null)
+			else throw new Error(userMsg ? userMsg : message); // fail(self.i, message, null)
 		}
 	}
 
 	function define(name, assertion) {
-		Assertion.prototype[name] = function assert(value) {
-			var self = this
-			assertion(self, value)
-			return function(message) {
-				results[self.i].message = message + "\n\n" + results[self.i].message
-			}
+		Assertion.prototype[name] = function assert(value, userMsg='') {
+			assertion(this, value, userMsg)
 		}
 	}
 
