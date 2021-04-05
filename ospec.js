@@ -383,6 +383,7 @@ else window.o = m()
 							// Use `_done`, not `finalize` here to defend against badly behaved thenables.
 							// Let it crash if `then()` doesn't work as expected.
 							p.then(function() { _done(null, false) }, function(e) {_done(e, true)})
+								.catch(err => finalize(err, true, false));
 						} else {
 							finalize(null, false, false)
 						}
@@ -464,7 +465,7 @@ else window.o = m()
 		this.value = value
 		this.i = results.length
 		results.push({
-			pass: null,
+			pass: true, // incomplete assertions pass by default
 			message: "Incomplete assertion in the test definition starting at...",
 			error: globalTestOrHook.error,
 			task: globalTestOrHook,
@@ -480,7 +481,7 @@ else window.o = m()
 			var success = compare(self.value, value)
 			var message = serialize(self.value) + "\n  " + verb + "\n" + serialize(value)
 			if (success) succeed(self.i, message, null)
-			else fail(self.i, message, null)
+			else throw new Error(message); // fail(self.i, message, null)
 		}
 	}
 
