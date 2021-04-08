@@ -493,6 +493,7 @@ else window.o = m()
 
 	define("equals", plainAssertion("should equal", function(a, b) {return a === b}))
 	define("notEquals", plainAssertion("should not equal", function(a, b) {return a !== b}))
+	define("looseEquals", plainAssertion("should loosely equal", looseEqual))
 	define("deepEquals", plainAssertion("should deep equal", deepEqual))
 	define("notDeepEquals", plainAssertion("should not deep equal", function(a, b) {return !deepEqual(a, b)}))
 	define("throws", plainAssertion("should throw a", throws))
@@ -523,6 +524,23 @@ else window.o = m()
 			for (var i in a) if (i === "callee") return false
 			return true
 		}
+	}
+
+	// a is actual
+	// b is expected
+	function looseEqual(a, b) {
+		// loose could mean that null matches undefined, but I'd rather be more specific
+		if (a === null ^ b === null || a === undefined ^ b === undefined) return false;
+		if (a == b) return true
+		// eslint-disable-line no-bitwise
+		if (typeof a === "object" && typeof b === "object") {
+			let isEqual = true;
+			Object.entries(b).forEach(([key, val]) => {
+				isEqual = isEqual && looseEqual(val, b[key]);
+			});
+			return isEqual;
+		}
+		return false;
 	}
 
 	function deepEqual(a, b) {
