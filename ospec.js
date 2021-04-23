@@ -528,15 +528,16 @@ else window.o = m()
 
 	// a is actual
 	// b is expected
-	function looseEqual(a, b) {
+	function looseEqual(actual, expected) {
 		// loose could mean that null matches undefined, but I'd rather be more specific
-		if (a === null ^ b === null || a === undefined ^ b === undefined) return false;
-		if (a == b) return true
+		if (actual === null ^ expected === null || actual === undefined ^ expected === undefined) return false;
+		if (actual == expected) return true
 		// eslint-disable-line no-bitwise
-		if (typeof a === "object" && typeof b === "object") {
+		if (typeof actual === "object" && typeof expected === "object") {
 			let isEqual = true;
-			Object.entries(b).forEach(([key, val]) => {
-				isEqual = isEqual && looseEqual(val, b[key]);
+			console.log(actual, expected);
+			Object.entries(expected).forEach(([key, val]) => {
+				isEqual = isEqual && looseEqual(actual[key], val);
 			});
 			return isEqual;
 		}
