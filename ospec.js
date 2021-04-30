@@ -535,7 +535,6 @@ else window.o = m()
 		// eslint-disable-line no-bitwise
 		if (typeof actual === "object" && typeof expected === "object") {
 			let isEqual = true;
-			console.log(actual, expected);
 			Object.entries(expected).forEach(([key, val]) => {
 				isEqual = isEqual && looseEqual(actual[key], val);
 			});
