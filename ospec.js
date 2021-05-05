@@ -25,7 +25,10 @@ In each of these tasks:
 */
 
 
-;(function(m) {
+;
+const { emit } = require("process");
+
+(function(m) {
 if (typeof module !== "undefined") module["exports"] = m()
 else window.o = m()
 })(function init(name) {
@@ -612,59 +615,6 @@ else window.o = m()
 		try {return JSON.stringify(value)} catch (e) {return String(value)}
 	}
 
-	// o.spy is functionally equivalent to this:
-	// the extra complexity comes from compatibility issues
-	// in ES5 environments where you can't overwrite fn.length
-
-	// o.spy = function(fn) {
-	// 	var spy = function() {
-	// 		spy.this = this
-	// 		spy.args = [].slice.call(arguments)
-	// 		spy.calls.push({this: this, args: spy.args})
-	// 		spy.callCount++
-
-	// 		if (fn) return fn.apply(this, arguments)
-	// 	}
-	// 	if (fn)
-	// 		Object.defineProperties(spy, {
-	// 			length: {value: fn.length},
-	// 			name: {value: fn.name}
-	// 		})
-	// 	spy.args = []
-	// 	spy.calls = []
-	// 	spy.callCount = 0
-	// 	return spy
-	// }
-
-	var spyFactoryCache = Object.create(null)
-
-	function makeSpyFactory(name, length) {
-		if (spyFactoryCache[name] == null) spyFactoryCache[name] = []
-		var args = Array.apply(null, {length: length}).map(
-			function(_, i) {return "_" + i}
-		).join(", ");
-		var code =
-			"'use strict';" +
-			"var spy = (0, function " + name + "(" + args + ") {" +
-			"   return helper(this, [].slice.call(arguments), fn, spy)" +
-			"});" +
-			"return spy"
-
-		return spyFactoryCache[name][length] = new Function("fn", "helper", code)
-	}
-
-	function getOrMakeSpyFactory(name, length) {
-		return spyFactoryCache[name] && spyFactoryCache[name][length] || makeSpyFactory(name, length)
-	}
-
-	function spyHelper(self, args, fn, spy) {
-		spy.this = self
-		spy.args = args
-		spy.calls.push({this: self, args: args})
-		spy.callCount++
-
-		if (fn) return fn.apply(self, args)
-	}
 
 	var supportsFunctionMutations = false;
 	// eslint-disable-next-line no-empty, no-implicit-coercion
@@ -674,20 +624,48 @@ else window.o = m()
 	// eslint-disable-next-line no-new-func, no-empty
 	try {supportsEval = Function("return true")()} catch(e){}
 
-	o.spy = function spy(fn) {
-		var name = "", length = 0
-		if (fn) name = fn.name, length = fn.length
-		var spy = (!supportsFunctionMutations && supportsEval)
-			? getOrMakeSpyFactory(name, length)(fn, spyHelper)
-			: function(){return spyHelper(this, [].slice.call(arguments), fn, spy)}
-		if (supportsFunctionMutations) Object.defineProperties(spy, {
-			name: {value: name},
-			length: {value: length}
-		})
+	const events = () => {
+		const handlers = {};
+		const ensure = (event) => handlers[event] = handlers[event] || [];
+		return {
+			on(event, cb) {
+				ensure(event);
+				handlers[event].push(cb);
+				return () => handlers[event].splice(handlers[event].indexOf(cb), 1);
+			},
+			emit(event, payload) {
+				ensure(event);
+				handlers[event].forEach(cb => cb(payload));
+			}
+		}
+	};
 
+	o.spy = function (fn) {
+		const { on, emit } = events();
+		
+		var spy = function() {
+			spy.this = this
+			spy.args = [].slice.call(arguments)
+			spy.calls.push({this: this, args: spy.args})
+			spy.callCount++
+
+			let ret;
+			if (fn) ret = fn.apply(this, arguments)
+			
+			// let testing clients know the spy has been called
+			emit('called', ret);
+
+			return ret;
+		}
+		if (fn)
+			Object.defineProperties(spy, {
+				length: {value: fn.length},
+				name: {value: fn.name}
+			})
 		spy.args = []
 		spy.calls = []
 		spy.callCount = 0
+		spy.untilCalled = () => new Promise(resolve => on('called', resolve));
 		return spy
 	}
 
